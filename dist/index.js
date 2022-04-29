@@ -41,7 +41,7 @@ exports.createCheckRun = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const markup_1 = __nccwpck_require__(2727);
-function createCheckRun(repoToken, ignoreTestFailures, reportData, sha) {
+function createCheckRun(repoToken, ignoreTestFailures, reportData, sha, badgeStyle) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.info(`Creating PR check for ${reportData.ReportMetaData.ReportTitle}`);
@@ -60,7 +60,7 @@ function createCheckRun(repoToken, ignoreTestFailures, reportData, sha) {
                 git_sha = sha;
                 core.info(`Creating status check for user-provided GitSha: ${git_sha}`);
             }
-            const markupData = (0, markup_1.getMarkupForTrx)(reportData);
+            const markupData = (0, markup_1.getMarkupForTrx)(reportData, badgeStyle);
             const checkTime = new Date().toUTCString();
             core.info(`Check time is: ${checkTime}`);
             const response = yield octokit.checks.create({
@@ -144,6 +144,7 @@ function run() {
             const trxPath = core.getInput('TRX_PATH');
             const ignoreTestFailures = core.getInput('IGNORE_FAILURE', { required: false }) === 'true';
             const sha = core.getInput('SHA');
+            const badgeStyle = core.getInput('BADGE_STYLE', { required: false });
             core.info(`Finding Trx files in: ${trxPath}`);
             const trxFiles = yield (0, utils_1.getTrxFiles)(trxPath);
             core.info(`Processing ${trxFiles.length} trx files`);
@@ -151,7 +152,7 @@ function run() {
             core.info(`Checking for failing tests`);
             const failingTestsFound = (0, utils_1.areThereAnyFailingTests)(trxToJson);
             for (const data of trxToJson) {
-                yield (0, github_1.createCheckRun)(token, ignoreTestFailures, data, sha);
+                yield (0, github_1.createCheckRun)(token, ignoreTestFailures, data, sha, badgeStyle);
             }
             if (failingTestsFound) {
                 if (ignoreTestFailures) {
@@ -182,18 +183,26 @@ run();
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getTestRunDuration = exports.getMarkupForTrx = void 0;
-function getMarkupForTrx(testData) {
+function getMarkupForTrx(testData, badgeStyle) {
     const failedCount = testData.TrxData.TestRun.ResultSummary.Counters._failed;
     const passedCount = testData.TrxData.TestRun.ResultSummary.Counters._passed;
     const totalCount = testData.TrxData.TestRun.ResultSummary.Counters._total;
+    const skippedCount = (passedCount + failedCount) - totalCount;
     const testOutcome = testData.TrxData.TestRun.ResultSummary._outcome;
-    const badgeCountText = failedCount > 0
-        ? `${`${failedCount}/${totalCount}`}`
-        : `${`${passedCount}/${totalCount}`}`;
-    const badgeStatusText = failedCount > 0 || testOutcome === 'Failed' ? 'FAILED' : 'PASSED';
+    let leftSideText ='tests', rightSideText ='', style = '';
+    if(badgeStyle === 'emoji'){
+      rightSideText = `✔ ${passedCount} ✖ ${failedCount} ➟ ${skippedCount}`;
+      style = '?style=for-the-badge';
+    }
+    else{
+      leftSideText = failedCount > 0
+          ? `${`${failedCount}/${totalCount}`}`
+          : `${`${passedCount}/${totalCount}`}`;
+      rightSideText = failedCount > 0 || testOutcome === 'Failed' ? 'FAILED' : 'PASSED';
+    }
     const badgeColor = failedCount > 0 || testOutcome === 'Failed' ? 'red' : 'brightgreen';
     return `
-![Generic badge](https://img.shields.io/badge/${badgeCountText}-${badgeStatusText}-${badgeColor}.svg)
+![Generic badge](https://img.shields.io/badge/${leftSideText}-${rightSideText}-${badgeColor}${style})
 # Test Results - ${testData.ReportMetaData.ReportTitle}
 ${getTestTimes(testData)}
 ${getTestCounters(testData)}

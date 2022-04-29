@@ -18,6 +18,10 @@ inputs:
     SHA:
       description: 'SHA value to use. If not set then will be calculated based on context'
       required: false
+    BADGE_STYLE:
+      description: 'The look and feel of the check status badge. Valid options are: default, emoji'
+      required: false
+      default: 'default'
 outputs:
   test-outcome:
     description: 'Test outcome Failed/Passed'
