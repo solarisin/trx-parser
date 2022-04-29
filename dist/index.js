@@ -191,7 +191,7 @@ function getMarkupForTrx(testData, badgeStyle) {
     const testOutcome = testData.TrxData.TestRun.ResultSummary._outcome;
     let leftSideText ='tests', rightSideText ='', style = '';
     if(badgeStyle === 'emoji'){
-      rightSideText = `✔ ${passedCount} ✖ ${failedCount} ➟ ${skippedCount}`;
+      rightSideText = `%E2%9C%94%20${passedCount}%20%E2%9C%96%20${failedCount}%20%E2%9E%9F%20${skippedCount}`;
       style = '?style=for-the-badge';
     }
     else{
