@@ -606,6 +606,7 @@ function areThereAnyFailingTests(trxJsonReports) {
 exports.areThereAnyFailingTests = areThereAnyFailingTests;
 function getReportHeaders(data) {
     var _a, _b;
+    let m;
     let reportTitle = '';
     let reportName = '';
     let fileName = '';
