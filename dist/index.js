@@ -145,11 +145,10 @@ function run() {
             const ignoreTestFailures = core.getInput('IGNORE_FAILURE', { required: false }) === 'true';
             const sha = core.getInput('SHA');
             const badgeStyle = core.getInput('BADGE_STYLE', { required: false });
-            const reportNameRegex = core.getInput('CHECK_NAME_REGEX', { required: false });
             core.info(`Finding Trx files in: ${trxPath}`);
             const trxFiles = yield (0, utils_1.getTrxFiles)(trxPath);
             core.info(`Processing ${trxFiles.length} trx files`);
-            const trxToJson = yield (0, utils_1.transformAllTrxToJson)(trxFiles, reportNameRegex);
+            const trxToJson = yield (0, utils_1.transformAllTrxToJson)(trxFiles);
             core.info(`Checking for failing tests`);
             const failingTestsFound = (0, utils_1.areThereAnyFailingTests)(trxToJson);
             for (const data of trxToJson) {
@@ -523,7 +522,7 @@ function getAbsoluteFilePaths(fileNames, directoryName) {
     return absolutePaths;
 }
 exports.getAbsoluteFilePaths = getAbsoluteFilePaths;
-function transformTrxToJson(filePath, reportNameRegex) {
+function transformTrxToJson(filePath) {
     return __awaiter(this, void 0, void 0, function* () {
         let trxDataWrapper;
         if (fs.existsSync(filePath)) {
@@ -586,11 +585,11 @@ function readTrxFile(filePath) {
     });
 }
 exports.readTrxFile = readTrxFile;
-function transformAllTrxToJson(trxFiles, reportNameRegex) {
+function transformAllTrxToJson(trxFiles) {
     return __awaiter(this, void 0, void 0, function* () {
         const transformedTrxReports = [];
         for (const trx of trxFiles) {
-            transformedTrxReports.push(yield transformTrxToJson(trx, reportNameRegex));
+            transformedTrxReports.push(yield transformTrxToJson(trx));
         }
         return transformedTrxReports;
     });
@@ -605,10 +604,11 @@ function areThereAnyFailingTests(trxJsonReports) {
     return false;
 }
 exports.areThereAnyFailingTests = areThereAnyFailingTests;
-function getReportHeaders(data, reportNameRegex) {
+function getReportHeaders(data) {
     var _a, _b;
     let reportTitle = '';
     let reportName = '';
+    let fileName = '';
     const isEmpty = IsEmpty(data);
     if (isEmpty) {
         reportTitle = data.TestRun.ResultSummary.RunInfos.RunInfo._computerName;
@@ -617,21 +617,18 @@ function getReportHeaders(data, reportNameRegex) {
     else {
         const unittests = (_b = (_a = data.TestRun) === null || _a === void 0 ? void 0 : _a.TestDefinitions) === null || _b === void 0 ? void 0 : _b.UnitTest;
         const storage = getAssemblyName(unittests);
-        if(reportNameRegex === '') {
-            const dllName = storage.split('/').pop();
-            if (dllName) {
-                reportTitle = dllName.replace('.dll', '').toUpperCase().replace('.', ' ');
-                reportName = dllName.replace('.dll', '').toUpperCase();
-            }
+        /* Original name resolution, only supports paths with forward slashes
+        const dllName = storage.split('/').pop();
+        if (dllName) {
+            reportTitle = dllName.replace('.dll', '').toUpperCase().replace('.', ' ');
+            reportName = dllName.replace('.dll', '').toUpperCase();
         }
-        else {
-          // TODO still
-            if((m = regex.exec(str)) !== null && m.length > 0) {
-                m.shift();
-                var text = 
-                reportName = m.join('').toUpperCase();
-                reportTitle = reportName.replace('.', ' ');
-            }
+        */
+        const regex = /([^\\\/.]+)(?:([^\\\/]*)(?:\.[^\\\/.]+))?$/gm;
+        if((m = regex.exec(storage)) !== null && m.length > 0) {
+            fileName = m.shift();
+            reportName = m.join('').toUpperCase();
+            reportTitle = reportName.replace('.', ' ').replaceAll('-', ' ');
         }
     }
     return { reportName, reportTitle };
