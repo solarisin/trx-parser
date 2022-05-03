@@ -636,7 +636,7 @@ function getReportHeaders(data) {
         const regex = /([^\\\/.]+)(?:([^\\\/]*)(?:\.[^\\\/.]+))?$/gm;
         if((m = regex.exec(storage)) !== null && m.length > 0) {
             fileName = m.shift();
-            reportName = m.join('').replaceAll('.', '-').concat(configPostfix).toUpperCase();
+            reportName = m.join('').replaceAll('.', '-').concat('-').concat(configPostfix).toUpperCase();
             reportTitle = reportName.replaceAll('.', ' ').replaceAll('-', ' ');
         }
     }
