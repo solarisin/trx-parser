@@ -618,17 +618,25 @@ function getReportHeaders(data) {
     else {
         const unittests = (_b = (_a = data.TestRun) === null || _a === void 0 ? void 0 : _a.TestDefinitions) === null || _b === void 0 ? void 0 : _b.UnitTest;
         const storage = getAssemblyName(unittests);
-        /* Original name resolution, only supports paths with forward slashes
-        const dllName = storage.split('/').pop();
-        if (dllName) {
-            reportTitle = dllName.replace('.dll', '').toUpperCase().replace('.', ' ');
-            reportName = dllName.replace('.dll', '').toUpperCase();
+
+        // determine if the storage contains a release or debug folder and
+        // append that to the report name if so
+        let configPostfix = '';
+        if( storage.toUpperCase().includes("/RELEASE/") ||
+            storage.toUpperCase().includes("\\RELEASE\\")) {
+            configPostfix = 'release';
         }
-        */
+        else if(  storage.toUpperCase().includes("/DEBUG/") ||
+                  storage.toUpperCase().includes("\\DEBUG\\")) {
+            configPostfix = 'debug';
+        }
+
+        // apply a regex to the storage name to extract the assembly file 
+        // name without path or extension
         const regex = /([^\\\/.]+)(?:([^\\\/]*)(?:\.[^\\\/.]+))?$/gm;
         if((m = regex.exec(storage)) !== null && m.length > 0) {
             fileName = m.shift();
-            reportName = m.join('').replaceAll('.', '-').toUpperCase();
+            reportName = m.join('').replaceAll('.', '-').append(configPostfix).toUpperCase();
             reportTitle = reportName.replaceAll('.', ' ').replaceAll('-', ' ');
         }
     }
